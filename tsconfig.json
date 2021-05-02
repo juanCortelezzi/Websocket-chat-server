@@ -1,0 +1,14 @@
+{ 
+   "compilerOptions":{ 
+      "target":"es6",
+      "moduleResolution":"node",
+      "module":"commonjs",
+      "esModuleInterop": true,
+      "strict": true,
+      "forceConsistentCasingInFileNames": true
+   },
+   "include": [
+       "src/**/*"
+   ],
+   "compileOnSave":false
+}
