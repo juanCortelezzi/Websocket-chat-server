@@ -1,3 +1,5 @@
+import { Socket } from "socket.io";
+
 interface ILogin {
   room: string;
   name: string;
@@ -9,4 +11,8 @@ interface IUser {
   room: string;
 }
 
-export { ILogin, IUser };
+interface ISocket extends Socket {
+  name?: string;
+}
+
+export { ILogin, IUser, ISocket };
