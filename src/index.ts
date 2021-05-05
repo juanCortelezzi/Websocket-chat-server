@@ -10,7 +10,8 @@ const io = new Server(http, { cors: { origin: ["http://localhost:3000"] } });
 const port = process.env.PORT || 3001;
 
 io.on("connection", (socket: ISocket): void => {
-  socket.name = "juanba";
+  // provisory name declaration to check typescript errors
+  socket.name = "insert name here";
   socket.on("joinRoom", () => {}); //TODO
   socket.on("createRoom", () => {}); //TODO
   socket.on("message", () => {}); //TODO
