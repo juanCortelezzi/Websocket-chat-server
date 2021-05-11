@@ -5,6 +5,14 @@ interface ILogin {
   name: string;
 }
 
+type LoginCallback = ({
+  error,
+  user,
+}: {
+  error: string | undefined;
+  user: IUser | undefined;
+}) => void;
+
 interface IUser {
   id: string;
   name: string;
@@ -15,4 +23,4 @@ interface ISocket extends Socket {
   name?: string;
 }
 
-export { ILogin, IUser, ISocket };
+export { ILogin, LoginCallback, IUser, ISocket };
