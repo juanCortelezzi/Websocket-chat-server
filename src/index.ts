@@ -1,7 +1,7 @@
 import { createServer } from "http";
 import express, { Request, Response } from "express";
 import { Server } from "socket.io";
-import { ILogin, ISocket, LoginCallback } from "./types";
+import { ILogin, ISocket, IUser, LoginCallback } from "./types";
 import { UserStore } from "./userStore";
 import { loginSchema } from "./schemas";
 
@@ -17,6 +17,8 @@ io.on("connection", (socket: ISocket): void => {
   socket.on(
     "login",
     ({ name, room }: ILogin, callback: LoginCallback): void | ISocket => {
+      name = noLeadOrTrailWhites(name);
+      room = noLeadOrTrailWhites(room);
       // field validation
       if (typeof callback !== "function") {
         return socket.disconnect();
@@ -30,16 +32,45 @@ io.on("connection", (socket: ISocket): void => {
         id: socket.id,
         name,
         room,
+        admin: false,
       });
+
       if (storeError) return callback({ error: storeError, user: undefined });
       // join room and notify users
-      socket.join(room);
-      socket.in(room).emit("notification", {
-        title: "Someone's here",
-        description: `${name} just entered the room`,
-      });
-      io.in(room).emit("users", userStore.getRoomUsers(room));
-      return callback({ error: undefined, user });
+      (async (): Promise<void> => {
+        const allSocketsInRoom = await io.in(room).fetchSockets();
+        if (allSocketsInRoom.length > 0) {
+          console.log(`joining room: ${room}`);
+          io.to(userStore.getRoomAdmin(room).id).emit(
+            "acceptUser",
+            { name, id: socket.id },
+            (accepted: boolean): void => {
+              if (accepted) {
+                socket.name = name;
+                socket.join(room);
+                socket.in(room).emit("notification", {
+                  title: "Someone's here",
+                  description: `${name} just entered the room`,
+                });
+                io.in(room).emit("users", userStore.getRoomUsers(room));
+                return callback({ error: undefined, user });
+              }
+              return callback({ error: "not authorized", user: undefined });
+            }
+          );
+        } else {
+          console.log(`creating room: ${room}`);
+          socket.name = name;
+          socket.join(room);
+          userStore.selectNewAdmin(room);
+          socket.in(room).emit("notification", {
+            title: "Someone's here",
+            description: `${name} just entered the room`,
+          });
+          io.in(room).emit("users", userStore.getRoomUsers(room));
+          return callback({ error: undefined, user });
+        }
+      })();
     }
   );
 
@@ -55,6 +86,7 @@ io.on("connection", (socket: ISocket): void => {
   socket.on("roomMessage", (message: string): void => {
     const user = userStore.findUser(socket.id);
     if (user) {
+      // console.log(`[${user.name}]: ${message}`);
       io.in(user.room).emit("roomMessage", { message, from: user.name });
     }
   });
@@ -83,6 +115,11 @@ function logout(socket: ISocket): void {
     });
     io.in(user.room).emit("users", userStore.getRoomUsers(user.room));
   }
+}
+
+function noLeadOrTrailWhites(str: string): string {
+  const noLeadOrTrailWhites = /(^\s+|\s+$)/;
+  return str.replace(noLeadOrTrailWhites, "");
 }
 
 app.get("/", (_req: Request, res: Response): void => {

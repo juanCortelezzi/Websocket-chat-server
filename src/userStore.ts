@@ -2,32 +2,46 @@ import { IUser } from "./types";
 type ISessionArray = IUser[];
 
 class UserStore {
-  users: ISessionArray;
+  private users: ISessionArray;
   constructor() {
     this.users = [];
   }
 
-  findUser(userID: string): IUser | undefined {
+  public findUser(userID: string): IUser | undefined {
     return this.users.find((user: IUser): boolean => user.id == userID);
   }
 
-  saveUser(user: IUser): { error?: string; user?: IUser } {
+  public saveUser(user: IUser): { error?: string; user?: IUser } {
     const exists = this.users.findIndex((sUser) => sUser.id === user.id);
     if (exists !== -1) return { error: "user already exists" };
     this.users.push(user);
     return { user };
   }
 
-  deleteUser(id: string): IUser | undefined {
+  public deleteUser(id: string): IUser | undefined {
     const index = this.users.findIndex((user) => user.id === id);
     if (index !== -1) return this.users.splice(index, 1)[0];
   }
 
-  getRoomUsers(room: string): IUser[] {
+  public getRoomUsers(room: string): IUser[] {
     return this.users.filter((user) => user.room === room);
   }
 
-  printUsers(): void {
+  public getRoomAdmin(room: string): IUser {
+    return this.users.filter(
+      (user) => user.room === room && user.admin === true
+    )[0];
+  }
+
+  public selectNewAdmin(room: string): IUser | undefined {
+    const newAdmin = this.users.find((user): boolean => user.room === room);
+    if (newAdmin) {
+      newAdmin.admin = true;
+      return newAdmin;
+    }
+  }
+
+  public printUsers(): void {
     console.log(this.users);
   }
 }
