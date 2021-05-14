@@ -2,7 +2,7 @@ import { IUser } from "./types";
 type ISessionArray = IUser[];
 
 class UserStore {
-  private users: ISessionArray;
+  protected users: ISessionArray;
   constructor() {
     this.users = [];
   }
@@ -23,26 +23,11 @@ class UserStore {
     if (index !== -1) return this.users.splice(index, 1)[0];
   }
 
-  public getRoomUsers(room: string): IUser[] {
-    return this.users.filter((user) => user.room === room);
-  }
-
-  public getRoomAdmin(room: string): IUser {
-    return this.users.filter(
-      (user) => user.room === room && user.admin === true
-    )[0];
-  }
-
-  public selectNewAdmin(room: string): IUser | undefined {
-    const newAdmin = this.users.find((user): boolean => user.room === room);
-    if (newAdmin) {
-      newAdmin.admin = true;
-      return newAdmin;
-    }
-  }
-
   public printUsers(): void {
     console.log(this.users);
+  }
+  public getRoomUsers(room: string): IUser[] {
+    return this.users.filter((user) => user.room === room);
   }
 }
 

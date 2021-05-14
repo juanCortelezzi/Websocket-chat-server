@@ -1,7 +1,7 @@
 import { createServer } from "http";
 import express, { Request, Response } from "express";
 import { Server } from "socket.io";
-import { ILogin, ISocket, IUser, LoginCallback } from "./types";
+import { ILogin, ISocket, LoginCallback } from "./types";
 import { UserStore } from "./userStore";
 import { loginSchema } from "./schemas";
 
@@ -32,45 +32,18 @@ io.on("connection", (socket: ISocket): void => {
         id: socket.id,
         name,
         room,
-        admin: false,
       });
 
-      if (storeError) return callback({ error: storeError, user: undefined });
-      // join room and notify users
-      (async (): Promise<void> => {
-        const allSocketsInRoom = await io.in(room).fetchSockets();
-        if (allSocketsInRoom.length > 0) {
-          console.log(`joining room: ${room}`);
-          io.to(userStore.getRoomAdmin(room).id).emit(
-            "acceptUser",
-            { name, id: socket.id },
-            (accepted: boolean): void => {
-              if (accepted) {
-                socket.name = name;
-                socket.join(room);
-                socket.in(room).emit("notification", {
-                  title: "Someone's here",
-                  description: `${name} just entered the room`,
-                });
-                io.in(room).emit("users", userStore.getRoomUsers(room));
-                return callback({ error: undefined, user });
-              }
-              return callback({ error: "not authorized", user: undefined });
-            }
-          );
-        } else {
-          console.log(`creating room: ${room}`);
-          socket.name = name;
-          socket.join(room);
-          userStore.selectNewAdmin(room);
-          socket.in(room).emit("notification", {
-            title: "Someone's here",
-            description: `${name} just entered the room`,
-          });
-          io.in(room).emit("users", userStore.getRoomUsers(room));
-          return callback({ error: undefined, user });
-        }
-      })();
+      if (storeError || !user) {
+        return callback({ error: storeError, user: undefined });
+      }
+      socket.join(room);
+      socket.in(room).emit("notification", {
+        title: "Someone's here",
+        description: `${name} just entered the room`,
+      });
+      io.in(room).emit("users", userStore.getRoomUsers(room));
+      return callback({ error: undefined, user });
     }
   );
 
@@ -86,7 +59,6 @@ io.on("connection", (socket: ISocket): void => {
   socket.on("roomMessage", (message: string): void => {
     const user = userStore.findUser(socket.id);
     if (user) {
-      // console.log(`[${user.name}]: ${message}`);
       io.in(user.room).emit("roomMessage", { message, from: user.name });
     }
   });
@@ -106,14 +78,17 @@ io.on("connection", (socket: ISocket): void => {
 });
 
 function logout(socket: ISocket): void {
-  const user = userStore.deleteUser(socket.id);
-  if (user) {
-    socket.leave(user.room);
-    io.in(user.room).emit("notification", {
+  const userInRoom = userStore.deleteUser(socket.id);
+  if (userInRoom) {
+    socket.leave(userInRoom.room);
+    io.in(userInRoom.room).emit("notification", {
       title: "Someone just left",
-      description: `${user.name} just left the room`,
+      description: `${userInRoom.name} just left the room`,
     });
-    io.in(user.room).emit("users", userStore.getRoomUsers(user.room));
+    io.in(userInRoom.room).emit(
+      "users",
+      userStore.getRoomUsers(userInRoom.room)
+    );
   }
 }
 
