@@ -7,14 +7,14 @@ import { loginSchema } from "./schemas";
 import { config } from "dotenv";
 
 config();
+const endpoint = (process.env.ENDPOINT as string) || "http://localhost:3000";
+const port = (process.env.PORT as string) || 3001;
 
 const app = express();
 const http = createServer(app);
 const io = new Server(http, {
-  cors: { origin: [process.env.ENDPOINT as string], methods: ["GET", " POST"] },
+  cors: { origin: [endpoint], methods: ["GET", " POST"] },
 });
-
-const port = process.env.PORT || 3001;
 
 const userStore = new UserStore();
 
