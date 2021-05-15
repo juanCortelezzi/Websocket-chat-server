@@ -4,10 +4,15 @@ import { Server } from "socket.io";
 import { ILogin, ISocket, LoginCallback } from "./types";
 import { UserStore } from "./userStore";
 import { loginSchema } from "./schemas";
+import { config } from "dotenv";
+
+config();
 
 const app = express();
 const http = createServer(app);
-const io = new Server(http, { cors: { origin: ["http://localhost:3000"] } });
+const io = new Server(http, {
+  cors: { origin: [process.env.ENDPOINT as string], methods: ["GET", " POST"] },
+});
 
 const port = process.env.PORT || 3001;
 
