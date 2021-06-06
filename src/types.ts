@@ -1,4 +1,4 @@
-import { Socket } from "socket.io";
+type SocketId = string;
 
 interface ILogin {
   room: string;
@@ -19,8 +19,4 @@ interface IUser {
   room: string;
 }
 
-interface ISocket extends Socket {
-  name?: string;
-}
-
-export { ILogin, LoginCallback, IUser, ISocket };
+export { ILogin, LoginCallback, IUser, SocketId };

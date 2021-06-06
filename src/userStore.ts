@@ -1,34 +1,38 @@
-import { IUser } from "./types";
-type ISessionArray = IUser[];
+import { IUser, SocketId } from "./types";
 
 class UserStore {
-  protected users: ISessionArray;
+  protected users: Map<SocketId, IUser>;
   constructor() {
-    this.users = [];
+    this.users = new Map();
   }
 
-  //O(n)
-  public findUser(id: string): IUser | undefined {
-    return this.users.find((user: IUser): boolean => user.id == id);
+  public findUser(id: SocketId): IUser | undefined {
+    return this.users.get(id);
   }
 
-  //O(n)
   public saveUser(user: IUser): { error?: string; user?: IUser } {
-    const exists = this.users.findIndex((sUser) => sUser.id === user.id);
-    if (exists !== -1) return { error: "user already exists" };
-    this.users.push(user);
+    const exists = this.users.has(user.id);
+    if (exists) return { error: "user already exists" };
+    this.users.set(user.id, user);
     return { user };
   }
 
-  //O(n^2)
-  public deleteUser(id: string): IUser | undefined {
-    const index = this.users.findIndex((user) => user.id === id);
-    if (index !== -1) return this.users.splice(index, 1)[0];
+  public deleteUser(id: SocketId): IUser | undefined {
+    const user = this.users.get(id);
+    if (user) {
+      this.users.delete(id);
+    }
+    return user;
   }
 
-  //O(n)
   public getRoomUsers(room: string): IUser[] {
-    return this.users.filter((user) => user.room === room);
+    const usersInRoom = [];
+    for (let user of this.users.values()) {
+      if (user.room === room) {
+        usersInRoom.push(user);
+      }
+    }
+    return usersInRoom;
   }
 }
 

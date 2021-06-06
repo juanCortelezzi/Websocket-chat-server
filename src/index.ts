@@ -1,7 +1,7 @@
 import { createServer } from "http";
 import express, { Request, Response } from "express";
-import { Server } from "socket.io";
-import { ILogin, ISocket, LoginCallback } from "./types";
+import { Server, Socket } from "socket.io";
+import { ILogin, LoginCallback } from "./types";
 import { UserStore } from "./userStore";
 import { loginSchema } from "./schemas";
 import { config } from "dotenv";
@@ -18,10 +18,10 @@ const io = new Server(http, {
 
 const userStore = new UserStore();
 
-io.on("connection", (socket: ISocket): void => {
+io.on("connection", (socket: Socket): void => {
   socket.on(
     "login",
-    ({ name, room }: ILogin, callback: LoginCallback): void | ISocket => {
+    ({ name, room }: ILogin, callback: LoginCallback): void | Socket => {
       name = noLeadOrTrailWhites(name);
       room = noLeadOrTrailWhites(room);
       // field validation
@@ -52,7 +52,7 @@ io.on("connection", (socket: ISocket): void => {
     }
   );
 
-  socket.on("logout", (callback): ISocket | undefined => {
+  socket.on("logout", (callback): Socket | undefined => {
     // callback validation
     if (typeof callback !== "function") {
       return socket.disconnect();
@@ -68,7 +68,7 @@ io.on("connection", (socket: ISocket): void => {
     }
   });
 
-  socket.on("ping", (callback): ISocket | undefined => {
+  socket.on("ping", (callback): Socket | undefined => {
     // callback validation
     if (typeof callback !== "function") {
       return socket.disconnect();
@@ -82,7 +82,7 @@ io.on("connection", (socket: ISocket): void => {
   });
 });
 
-function logout(socket: ISocket): void {
+function logout(socket: Socket): void {
   const userInRoom = userStore.deleteUser(socket.id);
   if (userInRoom) {
     socket.leave(userInRoom.room);
